@@ -1,0 +1,14 @@
+prefix=/home/ssp/ffmpeg_lib
+exec_prefix=${prefix}
+libdir=/home/ssp/ffmpeg_lib/lib
+includedir=/home/ssp/ffmpeg_lib/include
+
+Name: libavutil
+Description: FFmpeg utility library
+Version: 58.2.100
+Requires: 
+Requires.private: 
+Conflicts:
+Libs: -L${libdir}  -lavutil 
+Libs.private: -pthread -lva-drm -lva -lva-x11 -lva -lm -lva -latomic -lX11
+Cflags: -I${includedir}
