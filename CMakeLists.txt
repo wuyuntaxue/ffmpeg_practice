@@ -9,3 +9,5 @@ include_directories(${PROJECT_SOURCE_DIR}/3rdparty/ffmpeg-n6.0/include)
 link_directories(${PROJECT_SOURCE_DIR}/3rdparty/ffmpeg-n6.0/lib)
 
 add_subdirectory(${PROJECT_SOURCE_DIR}/ch0)
+
+add_subdirectory(${PROJECT_SOURCE_DIR}/separate-aac)
