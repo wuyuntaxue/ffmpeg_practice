@@ -11,3 +11,7 @@ link_directories(${PROJECT_SOURCE_DIR}/3rdparty/ffmpeg-n6.0/lib)
 add_subdirectory(${PROJECT_SOURCE_DIR}/ch0)
 
 add_subdirectory(${PROJECT_SOURCE_DIR}/separate-aac)
+
+add_subdirectory(${PROJECT_SOURCE_DIR}/parser-h264)
+
+add_subdirectory(${PROJECT_SOURCE_DIR}/encoder-h264)
