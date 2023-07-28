@@ -15,3 +15,5 @@ add_subdirectory(${PROJECT_SOURCE_DIR}/separate-aac)
 add_subdirectory(${PROJECT_SOURCE_DIR}/parser-h264)
 
 add_subdirectory(${PROJECT_SOURCE_DIR}/encoder-h264)
+
+add_subdirectory(${PROJECT_SOURCE_DIR}/vaapi-encoder-h264)

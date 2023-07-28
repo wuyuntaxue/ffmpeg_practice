@@ -13,3 +13,5 @@
 # 运行时的库加载路径
 export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/xxx/ffmpeg_practice/3rdparty/ffmpeg-n6.0/lib
 ```
+
+//export LIBVA_DRIVERS_PATH=/usr/lib/x86_64-linux-gnu/dri
