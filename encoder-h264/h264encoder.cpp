@@ -4,12 +4,18 @@
 
 #include <iostream>
 
+static char  err_buf[1280] = {0};
+static char *av_get_err(int errnum) {
+    av_strerror(errnum, err_buf, 128);
+    return err_buf;
+}
 
 FFMPEGEncoder::FFMPEGEncoder() {}
 
 FFMPEGEncoder::~FFMPEGEncoder() {}
 
 int FFMPEGEncoder::init_encoder() {
+
     pAVCodec_ = avcodec_find_encoder(AV_CODEC_ID_H264);
     if (pAVCodec_ == nullptr) {
         std::cout << "can't find avcodec" << std::endl;
@@ -44,16 +50,17 @@ int FFMPEGEncoder::transcode(AVFrame *frame, std::function<void(AVPacket *pkt)> 
     pAVCodecContext_->height  = frame->height;
     pAVCodecContext_->pix_fmt = (AVPixelFormat)frame->format;
     // pAVCodecContext_->pix_fmt = AV_PIX_FMT_YUV420P;
+    pAVCodecContext_->strict_std_compliance = FF_COMPLIANCE_UNOFFICIAL;
 
     int ret = avcodec_open2(pAVCodecContext_, pAVCodec_, NULL);
     if (ret < 0) {
-        std::cout << "avcodec_open2 failed" << std::endl;
+        std::cout << "avcodec_open2 failed, " << av_get_err(ret) << std::endl;
         return -1;
     }
 
     ret = avcodec_send_frame(pAVCodecContext_, frame);
     if (ret < 0) {
-        fprintf(stderr, "Error sending a frame for encoding\n");
+        std::cout << "Error sending a frame for encoding, " << av_get_err(ret) << std::endl;
         return -1;
     }
 
