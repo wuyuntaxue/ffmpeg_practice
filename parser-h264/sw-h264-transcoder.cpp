@@ -96,10 +96,7 @@ int SWTranscoder::transcode(std::string infile, std::string outfile) {
                 if (encoder_opened_) {
                     do_encode(frame, [&](AVPacket *outpkt) {
                         // std::cout << "encode callback" << std::endl;
-                        static int count = 0;
-                        if (count == 0)
-                            fwrite(outpkt->data, 1, outpkt->size, pOutFile);
-                        count++;
+                        fwrite(outpkt->data, 1, outpkt->size, pOutFile);
                     });
                 }
             });
