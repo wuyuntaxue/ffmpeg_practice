@@ -11,15 +11,23 @@ extern "C" {
 #include <libswscale/swscale.h>
 }
 
-#include "h264decoder.h"
+#include "sw-h264-transcoder.h"
 
-int main() {
-    FFMPEGDecoder decoder("test_cash.h264", "out.yuv");
+int main(int argc, char *argv[]) {
 
-    decoder.init_decoder();
+    if (argc < 2) {
+        std::cout << argv[0] << " intputfile outputfile" << std::endl;
+        return -1;
+    }
 
-    decoder.decode();
+    SWTranscoder transcoder_;
+    int          ret = transcoder_.open(AV_CODEC_ID_H264, AV_CODEC_ID_MJPEG);
 
-    decoder.deinit_decoder();
+    if (ret == 0) {
+        transcoder_.transcode(argv[1], argv[2]);
+    }
+
+    transcoder_.close();
+
     return 0;
 }
