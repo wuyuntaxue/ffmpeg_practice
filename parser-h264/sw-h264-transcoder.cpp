@@ -35,10 +35,6 @@ int SWTranscoder::open(AVCodecID inCodecID, AVCodecID outCodecID) {
         return -1;
     }
 
-    if (0 != open_parser(inCodecID)) {
-        return -1;
-    }
-
     // if (0 != open_encoder(outCodecID, transit_pixel_)) {
     //     return -1;
     // }
@@ -49,70 +45,56 @@ int SWTranscoder::open(AVCodecID inCodecID, AVCodecID outCodecID) {
 }
 
 int SWTranscoder::transcode(std::string infile, std::string outfile) {
-    FILE *pInFile = fopen(infile.c_str(), "r");
-    if (pInFile == nullptr) {
-        std::cout << infile << " open failed" << std::endl;
+
+    int ret = open_format(infile);
+    if (ret < 0) {
+        av_strerror(ret, errStr, sizeof(errStr));
+        std::cout << "find stream format failed" << std::endl;
         return -1;
     }
 
     FILE *pOutFile = fopen(outfile.c_str(), "w");
     if (pOutFile == nullptr) {
         std::cout << outfile << " open failed" << std::endl;
-        fclose(pInFile);
         return -1;
     }
 
-    uint8_t  *inbuf = new uint8_t[VIDEO_INBUF_SIZE + AV_INPUT_BUFFER_PADDING_SIZE];
-    uint8_t  *data  = inbuf;
-    AVPacket *pkt   = av_packet_alloc();
+    AVPacket    *pkt      = av_packet_alloc();
+    unsigned int pktCount = 0;
 
-    size_t data_size = fread(inbuf, 1, VIDEO_INBUF_SIZE, pInFile);
-    while (data_size > 0) {
-        int ret = av_parser_parse2(pParser_ctx_, pDecodec_ctx_, &pkt->data, &pkt->size, data, (int)data_size,
-                                   AV_NOPTS_VALUE, AV_NOPTS_VALUE, 0);
-        if (ret < 0) {
-            av_strerror(ret, errStr, sizeof(errStr));
-            std::cout << "parse failed, " << errStr << std::endl;
-            break;
-        }
-        data += ret;
-        data_size -= ret;
-        if (data_size < VIDEO_REFILL_THRESH) {
-            memmove(inbuf, data, data_size);
-            data       = inbuf;
-            size_t len = fread(data + data_size, 1, VIDEO_INBUF_SIZE - data_size, pInFile);
-            if (len > 0) {
-                data_size += len;
-            }
-        }
+    while (av_read_frame(pFormat_ctx_, pkt) >= 0) {
 
-        if (pkt->size) {
-            do_decode(pkt, [&](AVFrame *frame) {
-                // std::cout << "decode callback" << std::endl;
+        if (pkt->size && pkt->stream_index == video_index_) {
+            do_decode(pktCount, pkt, [&](unsigned int pktid, AVFrame *frame) {
+                std::cout << "decode callback " << pktid << std::endl;
+
                 if (!encoder_opened_) {
                     open_encoder(out_codec_id_, (AVPixelFormat)frame->format, pDecodec_ctx_->width,
                                  pDecodec_ctx_->height);
                 }
+
                 if (encoder_opened_) {
-                    do_encode(frame, [&](AVPacket *outpkt) {
-                        // std::cout << "encode callback" << std::endl;
+                    do_encode(pktid, frame, [&](unsigned int frameid, AVPacket *outpkt) {
+                        std::cout << "encode callback " << frameid << std::endl;
                         fwrite(outpkt->data, 1, outpkt->size, pOutFile);
                     });
                 }
             });
         }
+        if (encoder_opened_) {
+            close_encoder();
+        }
+        pktCount++;
     }
 
     av_packet_free(&pkt);
-    delete[] inbuf;
     fclose(pOutFile);
-    fclose(pInFile);
     return 0;
 }
 
 int SWTranscoder::close() {
     close_encoder();
-    close_parser();
+    close_format();
     close_decoder();
     return 0;
 }
@@ -133,8 +115,8 @@ int SWTranscoder::open_decoder(AVCodecID codecID, AVPixelFormat outPixel) {
         return -1;
     }
 
-    //todo 设置像素格式没有作用
-    pDecodec_ctx_->pix_fmt = outPixel;
+    // todo 设置像素格式没有作用
+    pDecodec_ctx_->pix_fmt    = outPixel;
     pDecodec_ctx_->sw_pix_fmt = outPixel;
     // pDecodec_ctx_->get_format = get_format;
 
@@ -144,6 +126,7 @@ int SWTranscoder::open_decoder(AVCodecID codecID, AVPixelFormat outPixel) {
         std::cout << "decoder open failed, " << errStr << std::endl;
         return -1;
     }
+    std::cout << "decoder init done." << std::endl;
     return 0;
 }
 
@@ -155,7 +138,7 @@ int SWTranscoder::close_decoder() {
     return 0;
 }
 
-int SWTranscoder::do_decode(AVPacket *inpkt, DecodeCallback callback) {
+int SWTranscoder::do_decode(unsigned int pktid, AVPacket *inpkt, DecodeCallback callback) {
     int ret = avcodec_send_packet(pDecodec_ctx_, inpkt);
     if (ret < 0) {
         av_strerror(ret, errStr, sizeof(errStr));
@@ -174,7 +157,7 @@ int SWTranscoder::do_decode(AVPacket *inpkt, DecodeCallback callback) {
             break;
         }
         if (callback) {
-            callback(frame);
+            callback(pktid, frame);
         }
     }
 
@@ -202,6 +185,7 @@ int SWTranscoder::open_encoder(AVCodecID codecID, AVPixelFormat inPixel, int wid
     pEncodec_ctx_->time_base             = AVRational{1, 25}; // TODO
     pEncodec_ctx_->framerate             = AVRational{25, 1};
     pEncodec_ctx_->strict_std_compliance = FF_COMPLIANCE_UNOFFICIAL;
+    pEncodec_ctx_->gop_size              = 50;
 
     int ret = avcodec_open2(pEncodec_ctx_, pEncodec_, NULL);
     if (ret < 0) {
@@ -210,6 +194,7 @@ int SWTranscoder::open_encoder(AVCodecID codecID, AVPixelFormat inPixel, int wid
         return -1;
     }
     encoder_opened_ = true;
+    std::cout << "encoder init done." << std::endl;
     return 0;
 }
 
@@ -222,7 +207,7 @@ int SWTranscoder::close_encoder() {
     return 0;
 }
 
-int SWTranscoder::do_encode(AVFrame *inframe, EncodeCallback callback) {
+int SWTranscoder::do_encode(unsigned int frameid, AVFrame *inframe, EncodeCallback callback) {
     int ret = avcodec_send_frame(pEncodec_ctx_, inframe);
     if (ret < 0) {
         av_strerror(ret, errStr, sizeof(errStr));
@@ -243,7 +228,7 @@ int SWTranscoder::do_encode(AVFrame *inframe, EncodeCallback callback) {
         }
 
         if (callback) {
-            callback(pkt);
+            callback(frameid, pkt);
         }
     }
 
@@ -251,20 +236,46 @@ int SWTranscoder::do_encode(AVFrame *inframe, EncodeCallback callback) {
     return 0;
 }
 
-// parser
-int SWTranscoder::open_parser(AVCodecID codecID) {
-    // 获取裸流的解析器
-    pParser_ctx_ = av_parser_init(codecID);
-    if (pParser_ctx_ == nullptr) {
-        std::cout << "av parser init failed" << std::endl;
-        return -1;
+int SWTranscoder::open_format(std::string filename) {
+
+    do {
+        // 打开文件，如果是url则创建网络链接
+        int ret = avformat_open_input(&pFormat_ctx_, filename.c_str(), NULL, NULL);
+        if (ret < 0) {
+            av_strerror(ret, errStr, sizeof(errStr));
+            std::cout << "format open failed, " << errStr << std::endl;
+            break;
+        }
+
+        // 读取码流信息到 avformat_ctx
+        ret = avformat_find_stream_info(pFormat_ctx_, NULL);
+        if (ret < 0) {
+            av_strerror(ret, errStr, sizeof(errStr));
+            std::cout << "find stream info failed, " << errStr << std::endl;
+            break;
+        }
+
+        // 找出视频流
+        video_index_ = av_find_best_stream(pFormat_ctx_, AVMEDIA_TYPE_VIDEO, -1, -1, NULL, 0);
+        if (video_index_ < 0) {
+            av_strerror(video_index_, errStr, sizeof(errStr));
+            std::cout << "find best video stream failed, " << errStr << std::endl;
+            break;
+        } else {
+            return 0;
+        }
+
+    } while (0);
+
+    if (pFormat_ctx_) {
+        avformat_close_input(&pFormat_ctx_);
     }
-    return 0;
+    return -1;
 }
 
-int SWTranscoder::close_parser() {
-    if (pParser_ctx_) {
-        av_parser_close(pParser_ctx_);
+int SWTranscoder::close_format() {
+    if (pFormat_ctx_) {
+        avformat_close_input(&pFormat_ctx_);
     }
     return 0;
 }

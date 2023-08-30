@@ -38,6 +38,8 @@ int FFMPEGDecoder::init_decoder() {
         std::cout << "avcodec_alloc_context3 failed" << std::endl;
         return -1;
     }
+    pAVCodecContext_->codec_type = AVMEDIA_TYPE_VIDEO;
+    pAVCodecContext_->pix_fmt = AV_PIX_FMT_NV12;
 
     // 将上下文和解码器关联
     int ret = avcodec_open2(pAVCodecContext_, pAVCodec_, NULL);

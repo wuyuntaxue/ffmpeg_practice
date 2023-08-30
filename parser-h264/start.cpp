@@ -12,6 +12,7 @@ extern "C" {
 }
 
 #include "sw-h264-transcoder.h"
+#include <memory>
 
 int main(int argc, char *argv[]) {
 
@@ -21,7 +22,7 @@ int main(int argc, char *argv[]) {
     }
 
     SWTranscoder transcoder_;
-    int          ret = transcoder_.open(AV_CODEC_ID_H264, AV_CODEC_ID_MJPEG);
+    int          ret = transcoder_.open(AV_CODEC_ID_H264, AV_CODEC_ID_PNG);
 
     if (ret == 0) {
         transcoder_.transcode(argv[1], argv[2]);

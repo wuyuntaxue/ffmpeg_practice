@@ -20,3 +20,9 @@ add_subdirectory(${PROJECT_SOURCE_DIR}/encoder-h264)
 add_subdirectory(${PROJECT_SOURCE_DIR}/vaapi-encoder-h264)
 
 add_subdirectory(${PROJECT_SOURCE_DIR}/qsv-encoder-h264)
+
+add_subdirectory(${PROJECT_SOURCE_DIR}/hw-transcode)
+
+add_subdirectory(${PROJECT_SOURCE_DIR}/mux-ch0)
+
+add_subdirectory(${PROJECT_SOURCE_DIR}/mux-ch1)
