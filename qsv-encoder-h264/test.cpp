@@ -23,6 +23,16 @@ int         height_       = 1080;
 
 AVPixelFormat sw_format = AV_PIX_FMT_NV12;
 AVPixelFormat hw_format = AV_PIX_FMT_QSV;
+AVHWDeviceType device_type = AV_HWDEVICE_TYPE_QSV;
+
+std::string enc_name = "mjpeg_qsv";
+
+/**
+ * @brief 在远端（intel cpu）的设备上：
+ * vaapi编码mjpeg时支持NV12，不支持YUV420
+ * qsv编码mjpeg支持NV12和YUV420
+ * 
+ */
 
 int main(int argc, char *argv[]) {
     if (argc < 3) {
@@ -38,7 +48,7 @@ int main(int argc, char *argv[]) {
 
     // 1. hw device create
     AVBufferRef *device_ctx_ref;
-    ret = av_hwdevice_ctx_create(&device_ctx_ref, AV_HWDEVICE_TYPE_QSV, NULL, NULL, 0);
+    ret = av_hwdevice_ctx_create(&device_ctx_ref, device_type, NULL, NULL, 0);
     if (ret < 0) {
         av_strerror(ret, errStr, sizeof(errStr));
         std::cout << "hwdevice ctx create failed, " << errStr << std::endl;
@@ -69,7 +79,7 @@ int main(int argc, char *argv[]) {
     }
 
     // 3
-    const AVCodec *encodec_ = avcodec_find_encoder_by_name("mjpeg_qsv");
+    const AVCodec *encodec_ = avcodec_find_encoder_by_name(enc_name.c_str());
     if (encodec_ == nullptr) {
         std::cout << "codec not find" << std::endl;
         return -1;
@@ -154,10 +164,11 @@ int main(int argc, char *argv[]) {
 
     while (!feof(pFile)) {
 
+        fread(frame->data[0], 1, frame->width * frame->height, pFile); // y
+
+        // YUV420P to NV12
         memset(uBuffer, 0, sizeof(uBuffer));
         memset(vBuffer, 0, sizeof(vBuffer));
-
-        fread(frame->data[0], 1, frame->width * frame->height, pFile); // y
         fread(uBuffer, 1, frame->width * frame->height / 4, pFile);    // u
         fread(vBuffer, 1, frame->width * frame->height / 4, pFile);    // v
         // 这里读取YUV420P的文件，转换成NV12格式
@@ -182,7 +193,7 @@ int main(int argc, char *argv[]) {
             std::cout << "av_hwframe_transfer_data failed, " << errStr << std::endl;
             return -1;
         }
-        frame_hw_mem->pts = frame->pts;
+        // frame_hw_mem->pts = frame->pts;
 
         // send frame
         {

@@ -23,6 +23,8 @@ int main(int argc, char **argv) {
         return -1;
     }
 
+    av_log_set_level(AV_LOG_DEBUG);
+
     char *input  = argv[1];
     int   width  = atoi(argv[2]);
     int   height = atoi(argv[3]);
