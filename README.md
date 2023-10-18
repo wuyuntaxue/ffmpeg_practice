@@ -15,3 +15,7 @@ export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/xxx/ffmpeg_practice/3rdparty/ffmpeg-n6.
 ```
 
 //export LIBVA_DRIVERS_PATH=/usr/lib/x86_64-linux-gnu/dri
+
+// ffplay -rtsp_transport tcp rtsp://admin:Dg1304\!@@172.17.21.9/chn301
+
+// export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/home/ssp/work/taxue/ffmpeg_practice/3rdparty/ffmpeg-n6.0/lib
