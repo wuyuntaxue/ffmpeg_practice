@@ -1,0 +1,9 @@
+Name: mfx1
+Description: Intel(R) Media SDK
+Version: 1.35
+
+prefix=/home/ssp/other-libs/MediaSDK
+libdir=/home/ssp/other-libs/MediaSDK/lib
+includedir=/home/ssp/other-libs/MediaSDK/include
+Libs: -L${libdir} -lmfxhw64
+Cflags: -I${includedir} -I${includedir}/mfx

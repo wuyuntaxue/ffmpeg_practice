@@ -1,7 +1,7 @@
-prefix=/home/ssp/ffmpeg_lib
+prefix=/home/ssp/ffmpeg
 exec_prefix=${prefix}
-libdir=/home/ssp/ffmpeg_lib/lib
-includedir=/home/ssp/ffmpeg_lib/include
+libdir=/home/ssp/ffmpeg/lib
+includedir=/home/ssp/ffmpeg/include
 
 Name: libavcodec
 Description: FFmpeg codec library
@@ -10,5 +10,5 @@ Requires:
 Requires.private: libswresample >= 4.10.100, libavutil >= 58.2.100
 Conflicts:
 Libs: -L${libdir}  -lavcodec 
-Libs.private: -pthread -lm -latomic -L/home/ssp/ffmpeg_lib//lib -lx264 -L/home/ssp/ffmpeg_lib/lib -lx265 -lz -lva
+Libs.private: -pthread -lm -latomic -L/home/ssp/ffmpeg_lib//lib -lx264 -L/home/ssp/ffmpeg_lib/lib -lx265 -lz -L/home/ssp/other-libs/libva/lib -lva -L/home/ssp/other-libs/MediaSDK/lib -lmfx -lstdc++ -ldl
 Cflags: -I${includedir}

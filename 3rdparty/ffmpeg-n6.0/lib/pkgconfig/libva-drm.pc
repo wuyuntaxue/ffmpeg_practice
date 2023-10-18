@@ -1,0 +1,12 @@
+prefix=/home/ssp/other-libs/libva
+exec_prefix=${prefix}
+libdir=${exec_prefix}/lib
+includedir=${prefix}/include
+display=drm
+
+Name: libva-${display}
+Description: Userspace Video Acceleration (VA) ${display} interface
+Requires: libva
+Version: 1.21.0
+Libs: -L${libdir} -lva-${display}
+Cflags: -I${includedir}

@@ -1,7 +1,7 @@
-prefix=/home/ssp/ffmpeg_lib
+prefix=/home/ssp/ffmpeg
 exec_prefix=${prefix}
-libdir=/home/ssp/ffmpeg_lib/lib
-includedir=/home/ssp/ffmpeg_lib/include
+libdir=/home/ssp/ffmpeg/lib
+includedir=/home/ssp/ffmpeg/include
 
 Name: libswscale
 Description: FFmpeg image rescaling library
