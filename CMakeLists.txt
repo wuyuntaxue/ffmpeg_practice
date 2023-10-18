@@ -25,4 +25,4 @@ add_subdirectory(${PROJECT_SOURCE_DIR}/mux-ch0)
 
 add_subdirectory(${PROJECT_SOURCE_DIR}/mux-ch1)
 
-# add_subdirectory(${PROJECT_SOURCE_DIR}/filter-ch0)
+add_subdirectory(${PROJECT_SOURCE_DIR}/filter-ch0)
