@@ -1,4 +1,5 @@
 extern "C" {
+#include <libavcodec/avcodec.h>
 #include <libavformat/avformat.h>
 }
 
@@ -51,6 +52,8 @@ int main(int argc, char *argv[]) {
     }
 
     ret = avcodec_parameters_copy(outStream_->codecpar, pFormatCtx_->streams[videoindex]->codecpar);
+    // avcodec_parameters_from_context(
+    // avcodec_parameters_from_context(outStream_->codecpar, );
     if (ret < 0) {
         av_strerror(ret, errStr, sizeof(errStr));
         std::cout << "parameter copy failed, " << errStr << std::endl;
@@ -71,11 +74,11 @@ int main(int argc, char *argv[]) {
         return -1;
     }
 
-    int frame_index = 0;
+    uint64_t pktCount = 0;
 
-    AVPacket *readPkt = av_packet_alloc();
     while (ret >= 0) {
-        ret = av_read_frame(pFormatCtx_, readPkt);
+        AVPacket *readPkt = av_packet_alloc();
+        ret               = av_read_frame(pFormatCtx_, readPkt);
         if (ret == AVERROR_EOF) {
             std::cout << "read eof" << std::endl;
             break;
@@ -85,30 +88,28 @@ int main(int argc, char *argv[]) {
             break;
         }
         if (readPkt->stream_index == videoindex) {
-            std::cout << "pts: " << readPkt->pts << std::endl;
-            // pFormatCtx_->streams[videoindex]->start_time
-            // readPkt->time_base
 
-            if (readPkt->pts==AV_NOPTS_VALUE) {
-                //Write PTS
-                AVRational time_base1 = pFormatCtx_->streams[videoindex]->time_base;
-                std::cout << "time_base num: " << time_base1.num << ", den: " << time_base1.den 
-                            << ", av_q2d: " << av_q2d(time_base1) << std::endl;
+            // 输入为mp4或这rtsp流时正常，输入为H264裸文件时，时间戳总是不对
+            readPkt->pts = av_rescale_q_rnd(readPkt->pts, pFormatCtx_->streams[videoindex]->time_base,
+                                            pFormatOutCtx_->streams[readPkt->stream_index]->time_base,
+                                            AV_ROUND_PASS_MINMAX);
 
-                // //Duration between 2 frames (us)
-                int64_t calc_duration=(double)AV_TIME_BASE/av_q2d(pFormatCtx_->streams[videoindex]->r_frame_rate);
-                //Parameters
-                readPkt->pts=(double)(frame_index*calc_duration)/(double)(av_q2d(time_base1)*AV_TIME_BASE);
-                readPkt->dts=readPkt->pts;
-                readPkt->duration=(double)calc_duration/(double)(av_q2d(time_base1)*AV_TIME_BASE);
-                // readPkt->pts = frame_index++ * (AV_TIME_BASE * av_q2d(time_base1));
-                frame_index++;
-                // TODO
-                //写入时间戳播放速度一直不对
-            }
+            readPkt->dts = readPkt->pts;
+
+            readPkt->duration = av_rescale_q(readPkt->duration, pFormatCtx_->streams[videoindex]->time_base,
+                                             pFormatOutCtx_->streams[readPkt->stream_index]->time_base);
+
+            readPkt->pos = -1;
+
             // av_write_frame(pFormatOutCtx_, readPkt);
             av_interleaved_write_frame(pFormatOutCtx_, readPkt);
+
+            pktCount++;
+            if (pktCount > 2000) {
+                break;
+            }
         }
+        av_packet_free(&readPkt);
     }
     av_write_trailer(pFormatOutCtx_);
 
